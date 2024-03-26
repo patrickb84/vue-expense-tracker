@@ -1,47 +1,77 @@
-<script setup>
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
-</script>
-
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
+  <Header />
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-    </div>
-  </header>
-
-  <main>
-    <TheWelcome />
-  </main>
+  <div class="container">
+    <Balance :total="+total" />
+    <IncomeExpenses :income="+income" :expenses="+expenses" />
+    <TransactionList :transactions="transactions" @transactionDeleted="handleTransactionDeleted" />
+    <AddTransaction @transactionSubmitted="handleTransactionSubitted" />
+  </div>
 </template>
 
-<style scoped>
-header {
-  line-height: 1.5;
+<script setup>
+import Header from './components/Header.vue'
+import Balance from './components/Balance.vue'
+import IncomeExpenses from './components/IncomeExpenses.vue'
+import TransactionList from './components/TransactionList.vue'
+import AddTransaction from './components/AddTransaction.vue'
+
+import { useToast } from 'vue-toastification'
+import { ref, computed } from 'vue'
+
+const toast = useToast()
+
+const transactions = ref([
+  { id: 1, text: 'Flower', amount: -19.99 },
+  { id: 2, text: 'Salary', amount: 299.97 },
+  { id: 3, text: 'Book', amount: -10 },
+  { id: 4, text: 'Camera', amount: 150 }
+])
+
+// Get total
+const total = computed(() => {
+  return transactions.value.reduce((acc, transaction) => {
+    return acc + transaction.amount
+  }, 0)
+});
+
+// Get income
+const income = computed(() => {
+  return transactions.value
+    .filter(transaction => transaction.amount > 0)
+    .reduce((acc, transaction) => {
+      return acc + transaction.amount
+    }, 0).toFixed(2)
+});
+
+// Get expenses
+const expenses = computed(() => {
+  return transactions.value
+    .filter(transaction => transaction.amount < 0)
+    .reduce((acc, transaction) => {
+      return acc + transaction.amount
+    }, 0).toFixed(2)
+});
+
+// Add transaction
+const handleTransactionSubitted = transactionData => {
+  transactions.value.push({
+    id: generateUniqueId(),
+    ...transactionData
+  })
+
+  toast.success('Transaction added')
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+// Generate unique ID
+const generateUniqueId = () => {
+  return Math.floor(Math.random() * 1000000)
 }
 
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
+// Delete transaction
+const handleTransactionDeleted = id => {
+  transactions.value = transactions.value.filter(transaction => transaction.id !== id)
 
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
+  toast.success('Transaction deleted')
 }
-</style>
+</script>
